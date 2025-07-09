@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Scanner | Event Entry</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #f9fafb;
+    }
+    #result-card {
+      display: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-6 bg-gradient-to-br from-blue-100 to-purple-100">
+  <h1 class="text-2xl font-bold text-gray-800 mb-4">QR Scanner for Event Entry</h1>
+
+  <!-- Role Selection -->
+  <div id="role-select" class="flex flex-col gap-4 items-center">
+    <p class="text-lg text-gray-700 font-medium">Select Role</p>
+    <div class="flex gap-4">
+      <button onclick="setRole('admin')" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">Admin</button>
+      <button onclick="setRole('scanner')" class="px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700">Scanner</button>
+    </div>
+  </div>
+
+  <!-- Scanner and Result Section -->
+  <div id="scanner-section" class="mt-6 w-full max-w-md" style="display:none">
+    <div id="scanner" class="rounded overflow-hidden shadow border"></div>
+
+    <div id="result-card" class="bg-white rounded-lg shadow p-4 mt-4">
+      <img id="photo" class="mx-auto w-24 h-24 rounded-full object-cover border mb-4" />
+      <h2 id="name" class="text-xl font-semibold text-center mb-2"></h2>
+      <p class="text-center text-gray-600"><strong>Gender:</strong> <span id="gender"></span></p>
+      <div class="mt-4 space-y-1 text-sm text-gray-700">
+        <p><strong>Status:</strong> <span id="status"></span></p>
+        <p><strong>Entry Time:</strong> <span id="entry"></span></p>
+        <p><strong>Exit Time:</strong> <span id="exit"></span></p>
+        <p><strong>Return Time:</strong> <span id="return"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const backendURL = "https://script.google.com/macros/s/AKfycbyTXPYOttpNP_lUMgsNpLMDrYeNRdlDAQ-LdLrudF-zEDcYXFzexj8eMQtWIjKLTWYEEg/exec";
+    let userRole = "";
+
+    function setRole(role) {
+      userRole = role;
+      document.getElementById("role-select").style.display = "none";
+      document.getElementById("scanner-section").style.display = "block";
+      startScanner();
+    }
+
+    function startScanner() {
+      const scanner = new Html5Qrcode("scanner");
+      const config = { fps: 10, qrbox: 250 };
+
+      scanner.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText, decodedResult) => {
+          scanner.stop();
+          fetchAttendee(decodedText.trim());
+        },
+        (error) => {}
+      );
+    }
+
+    function fetchAttendee(id) {
+      fetch(`${backendURL}?id=${id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.ID) {
+            document.getElementById("name").textContent = data.Name;
+            document.getElementById("gender").textContent = data.Gender;
+            document.getElementById("status").textContent = data.Status || "—";
+            document.getElementById("entry").textContent = data.Entry_Time || "—";
+            document.getElementById("exit").textContent = data.Exit_Time || "—";
+            document.getElementById("return").textContent = data.Return_Time || "—";
+            document.getElementById("photo").src = data.Photo_URL || "";
+            document.getElementById("result-card").style.display = "block";
+          } else {
+            alert("Attendee not found.");
+            location.reload();
+          }
+        })
+        .catch(err => {
+          alert("Error fetching data");
+          console.error(err);
+          location.reload();
+        });
+    }
+
+    // Register service worker for offline use
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(
+          registration => console.log("Service Worker registered with scope:", registration.scope),
+          err => console.log("Service Worker registration failed:", err)
+        );
+      });
+    }
+  </script>
+</body>
+</html>
