@@ -20,13 +20,13 @@
 <body class="min-h-screen flex flex-col items-center justify-start p-6 bg-gradient-to-br from-blue-100 to-purple-100">
   <h1 class="text-2xl font-bold text-gray-800 mb-4">QR Scanner for Event Entry</h1>
 
-  <!-- Role Selection -->
-  <div id="role-select" class="flex flex-col gap-4 items-center">
-    <p class="text-lg text-gray-700 font-medium">Select Role</p>
-    <div class="flex gap-4">
-      <button onclick="setRole('admin')" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">Admin</button>
-      <button onclick="setRole('scanner')" class="px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700">Scanner</button>
-    </div>
+  <!-- Admin Login -->
+  <div id="admin-login" class="flex flex-col items-center gap-2">
+    <p class="text-lg text-gray-700 font-medium">Admin Login</p>
+    <input type="text" id="username" placeholder="Username" class="px-3 py-2 border rounded-md" />
+    <input type="password" id="password" placeholder="Password" class="px-3 py-2 border rounded-md" />
+    <button onclick="login()" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">Login</button>
+    <p id="login-error" class="text-red-500 text-sm mt-1 hidden">Invalid credentials</p>
   </div>
 
   <!-- Scanner and Result Section -->
@@ -47,15 +47,44 @@
   </div>
 
   <script>
-    const backendURL = "https://script.google.com/macros/s/AKfycbyTXPYOttpNP_lUMgsNpLMDrYeNRdlDAQ-LdLrudF-zEDcYXFzexj8eMQtWIjKLTWYEEg/exec";
-    let userRole = "";
+    const adminList = [
+      { username: "admin1", password: "password123" },
+      { username: "superadmin", password: "event2024" },
+      { username: "organizer", password: "letmein" },
+      { username: "juhi", password: "secure456" }
+    ];
 
-    function setRole(role) {
-      userRole = role;
-      document.getElementById("role-select").style.display = "none";
+    function login() {
+      const u = document.getElementById("username").value;
+      const p = document.getElementById("password").value;
+
+      const valid = adminList.some(admin => admin.username === u && admin.password === p);
+      if (valid) {
+        localStorage.setItem("adminLoggedIn", "true");
+        document.getElementById("admin-login").style.display = "none";
+        showAdminPanel();
+      } else {
+        document.getElementById("login-error").classList.remove("hidden");
+      }
+    }
+
+    function showAdminPanel() {
       document.getElementById("scanner-section").style.display = "block";
       startScanner();
     }
+
+    window.onload = () => {
+      const loggedIn = localStorage.getItem("adminLoggedIn");
+      if (loggedIn === "true") {
+        document.getElementById("admin-login").style.display = "none";
+        showAdminPanel();
+      } else {
+        document.getElementById("scanner-section").style.display = "block";
+        startScanner();
+      }
+    };
+
+    const backendURL = "https://script.google.com/macros/s/AKfycbyTXPYOttpNP_lUMgsNpLMDrYeNRdlDAQ-LdLrudF-zEDcYXFzexj8eMQtWIjKLTWYEEg/exec";
 
     function startScanner() {
       const scanner = new Html5Qrcode("scanner");
@@ -85,6 +114,7 @@
             document.getElementById("return").textContent = data.Return_Time || "—";
             document.getElementById("photo").src = data.Photo_URL || "";
             document.getElementById("result-card").style.display = "block";
+            markAttendance(data.ID);
           } else {
             alert("Attendee not found.");
             location.reload();
@@ -95,6 +125,16 @@
           console.error(err);
           location.reload();
         });
+    }
+
+    function markAttendance(id) {
+      fetch(backendURL, {
+        method: "POST",
+        body: new URLSearchParams({ id })
+      })
+        .then(res => res.text())
+        .then(msg => console.log("Attendance Log:", msg))
+        .catch(err => console.error("Logging error:", err));
     }
 
     // Register service worker for offline use
