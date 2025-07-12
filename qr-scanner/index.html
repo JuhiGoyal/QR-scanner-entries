@@ -34,7 +34,7 @@
     <div id="scanner" class="rounded overflow-hidden shadow border"></div>
 
     <div id="result-card" class="bg-white rounded-lg shadow p-4 mt-4">
-      <img id="photo" class="mx-auto w-24 h-24 rounded-full object-cover border mb-4" />
+      <img id="photo" class="mx-auto w-24 h-24 rounded-full object-cover border mb-4" onerror="this.src='https://via.placeholder.com/100?text=No+Image'"/>
       <h2 id="name" class="text-xl font-semibold text-center mb-2"></h2>
       <p class="text-center text-gray-600"><strong>Gender:</strong> <span id="gender"></span></p>
       <div class="mt-4 space-y-1 text-sm text-gray-700">
@@ -54,7 +54,7 @@
       { username: "juhi", password: "secure456" }
     ];
 
-    const backendURL = "https://script.google.com/macros/s/AKfycbyTXPYOttpNP_lUMgsNpLMDrYeNRdlDAQ-LdLrudF-zEDcYXFzexj8eMQtWIjKLTWYEEg/exec";
+    const backendURL = "https://script.google.com/macros/s/AKfycbwizPhxje2ZM6dF_w9msmx1DFiyzLb4AQFE7-YQP-NiKc1aArXmx92B0OP7uT3Sw0KlBg/exec";
 
     function login() {
       const u = document.getElementById("username").value;
@@ -100,15 +100,18 @@
         document.getElementById("exit").textContent = data.Exit_Time || "—";
         document.getElementById("return").textContent = data.Return_Time || "—";
         // Convert Google Drive link to direct image link if needed
-let img = data.Photo_URL || "";
+/*let img = data.Photo_URL || "";
 if (img.includes("drive.google.com/file/d/")) {
   const match = img.match(/\/d\/(.+?)\//);
   if (match) {
     const fileId = match[1];
     img = `https://drive.google.com/uc?export=view&id=${fileId}`;
   }
-}
+}*/
+let img = data.Photo_URL || 'https://via.placeholder.com/100?text=No+Image';
+console.log("Final image URL:", img);
 document.getElementById("photo").src = img;
+
 
         document.getElementById("result-card").style.display = "block";
 
