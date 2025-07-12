@@ -46,7 +46,7 @@
     </div>
   </div>
 
-  <script>
+ <script>
     const adminList = [
       { username: "admin1", password: "password123" },
       { username: "superadmin", password: "event2024" },
@@ -54,50 +54,37 @@
       { username: "juhi", password: "secure456" }
     ];
 
+    const backendURL = "https://script.google.com/macros/s/AKfycbyTXPYOttpNP_lUMgsNpLMDrYeNRdlDAQ-LdLrudF-zEDcYXFzexj8eMQtWIjKLTWYEEg/exec";
+
     function login() {
       const u = document.getElementById("username").value;
       const p = document.getElementById("password").value;
-
       const valid = adminList.some(admin => admin.username === u && admin.password === p);
+
       if (valid) {
         localStorage.setItem("adminLoggedIn", "true");
         document.getElementById("admin-login").style.display = "none";
-        showAdminPanel();
+        showScanner();
       } else {
         document.getElementById("login-error").classList.remove("hidden");
       }
     }
 
-    function showAdminPanel() {
+    function showScanner() {
       document.getElementById("scanner-section").style.display = "block";
       startScanner();
     }
-
-    window.onload = () => {
-      const loggedIn = localStorage.getItem("adminLoggedIn");
-      if (loggedIn === "true") {
-        document.getElementById("admin-login").style.display = "none";
-        showAdminPanel();
-      } else {
-        document.getElementById("scanner-section").style.display = "block";
-        startScanner();
-      }
-    };
-
-    const backendURL = "https://script.google.com/macros/s/AKfycbyTXPYOttpNP_lUMgsNpLMDrYeNRdlDAQ-LdLrudF-zEDcYXFzexj8eMQtWIjKLTWYEEg/exec";
 
     function startScanner() {
       const scanner = new Html5Qrcode("scanner");
       const config = { fps: 10, qrbox: 250 };
 
-      scanner.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText, decodedResult) => {
+      scanner.start({ facingMode: "environment" }, config,
+        (decodedText) => {
           scanner.stop();
           fetchAttendee(decodedText.trim());
         },
-        (error) => {}
+        () => {}
       );
     }
 
@@ -133,17 +120,27 @@
         body: new URLSearchParams({ id })
       })
         .then(res => res.text())
-        .then(msg => console.log("Attendance Log:", msg))
-        .catch(err => console.error("Logging error:", err));
+        .then(msg => console.log("Attendance:", msg))
+        .catch(err => console.error("Attendance error:", err));
     }
 
-    // Register service worker for offline use
+    window.onload = () => {
+      const isAdmin = new URLSearchParams(window.location.search).get("role") === "admin";
+      const loggedIn = localStorage.getItem("adminLoggedIn") === "true";
+
+      if (isAdmin && !loggedIn) {
+        document.getElementById("admin-login").style.display = "flex";
+      } else {
+        showScanner();
+      }
+    };
+
+    // Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then(
-          registration => console.log("Service Worker registered with scope:", registration.scope),
-          err => console.log("Service Worker registration failed:", err)
-        );
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log("SW registered:", reg.scope))
+          .catch(err => console.log("SW failed:", err));
       });
     }
   </script>
