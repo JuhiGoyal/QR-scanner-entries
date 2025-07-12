@@ -89,40 +89,56 @@
     }
 
     function fetchAttendee(id) {
-      fetch(`${backendURL}?id=${id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.ID) {
-            document.getElementById("name").textContent = data.Name;
-            document.getElementById("gender").textContent = data.Gender;
-            document.getElementById("status").textContent = data.Status || "—";
-            document.getElementById("entry").textContent = data.Entry_Time || "—";
-            document.getElementById("exit").textContent = data.Exit_Time || "—";
-            document.getElementById("return").textContent = data.Return_Time || "—";
-            document.getElementById("photo").src = data.Photo_URL || "";
-            document.getElementById("result-card").style.display = "block";
-            markAttendance(data.ID);
-          } else {
-            alert("Attendee not found.");
-            location.reload();
-          }
-        })
-        .catch(err => {
-          alert("Error fetching data");
-          console.error(err);
-          location.reload();
-        });
-    }
+  fetch(`${backendURL}?id=${id}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.ID) {
+        document.getElementById("name").textContent = data.Name;
+        document.getElementById("gender").textContent = data.Gender;
+        document.getElementById("status").textContent = data.Status || "—";
+        document.getElementById("entry").textContent = data.Entry_Time || "—";
+        document.getElementById("exit").textContent = data.Exit_Time || "—";
+        document.getElementById("return").textContent = data.Return_Time || "—";
+        // Convert Google Drive link to direct image link if needed
+let img = data.Photo_URL || "";
+if (img.includes("drive.google.com/file/d/")) {
+  const match = img.match(/\/d\/(.+?)\//);
+  if (match) {
+    const fileId = match[1];
+    img = `https://drive.google.com/uc?export=view&id=${fileId}`;
+  }
+}
+document.getElementById("photo").src = img;
 
-    function markAttendance(id) {
-      fetch(backendURL, {
-        method: "POST",
-        body: new URLSearchParams({ id })
-      })
-        .then(res => res.text())
-        .then(msg => console.log("Attendance:", msg))
-        .catch(err => console.error("Attendance error:", err));
-    }
+        document.getElementById("result-card").style.display = "block";
+
+        // Mark attendance and refresh time fields
+        markAttendance(id);
+      } else {
+        alert("Attendee not found.");
+        location.reload();
+      }
+    })
+    .catch(err => {
+      alert("Error fetching data");
+      console.error(err);
+      location.reload();
+    });
+}
+
+function markAttendance(id) {
+  fetch(backendURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ id })
+  })
+    .then(() => {
+      // Wait a second then refresh the data to reflect updated time
+      setTimeout(() => fetchAttendee(id), 1000);
+    })
+    .catch(err => console.error("Logging error:", err));
+}
+
 
     window.onload = () => {
       const isAdmin = new URLSearchParams(window.location.search).get("role") === "admin";
